@@ -1,0 +1,95 @@
+PROJECT 2: BitTorrent Client Implementation
+
+************************
+
+Name: Sravya Gudipudi
+uname: sgudipud
+
+Name: Avinash Ravi
+uname: avinravi
+
+************************
+
+
+What's in the code?
+---------------------
+The main objective  of this project is  to build a basic Bit Torrent client which parses the torrent  file and share
+the file among peers. The implementation of the Bit Torrent Client is as follows:
+
+Common Functionality - Initially, when the client program starts running, the torrent file is parsed and the torrent
+arguments are stored in a structure. Then, a new socket is opened and bound to an ip address and port number. If the
+program running  has the complete file,  then the peer is run as  a Seeder. If the  program running is looking for a 
+file, then the peer is run as a Leecher.
+
+SEEDER  - Once the peer is bound to an address, it waits for the incoming connections. If there  is an a connect request
+from a leecher, it accepts the connection and then it creates a thread for that particular  leecher and the seeder waits
+for a new connection. The thread process waits for a hand shake message from the leecher  which includes the peer id and
+the hash of the info part of the torrent file. If the hash of the info part mismatches, seeder terminates the connection 
+since the file hosted by seeder is different from the file leecher is looking for. If the hash of the  info matches with 
+the hash of the  info it has, then the hand shake message is acknowledged by sending the seeder peer id and the  hash of 
+the info  part of torrent file.  Then the seeder sets the  connected leecher as un-choked and is notified to the leecher.
+Also, the  seeder shares the bit field message i.e. the information about the pieces  of data the seeder is having. Then, 
+the seeder  waits for an interested message  from the leecher. If the leecher  is interested in downloading the file, it
+waits for the request message from  leecher which includes  the index  of the piece, offset and the length of data to be 
+read. The offset is  start position of file with respect to piece index from where the data has to be read. This repeats
+until the leecher has a complete piece/file. If the leecher has the complete file,  then it sends a cancel  request upon 
+which the seeder stops the data transmission and closes the connection with the leecher.
+
+LEECHER - Once the peer is connected to a seeder, a hand shake message is sent to the seeder which includes the peer id
+and the hash of the info of the torrent file. If the hash matches with the seeder's hash, it acknowledges the hand shake
+message and  sends the bit field  of the seeder. Leecher compares it's bit field with the seeder's bit field and sends a
+sequence  of requests for  the missing piece.  This comparison  continues until  the leecher has the complete file. This 
+downloaded  piece file  is stored in  a temporary file  and once the  leecher has all the pieces, it then writes all the 
+pieces into the main file after comparing the SHA1 digest of the pieces with the SHA1 digest in the torrent file.
+
+
+Tasks Accomplished
+---------------------
+-> Parsing the torrent file and storing the arguments in a structure.
+-> Establishing a connection between seeder and leecher, completing hand shake procedure between.
+-> Sending part of files over the network and saving them to the original file after comparing the SHA1 digests.
+-> Logging the events occurred in the file transfer process.
+-> Extending the Seeder functionality to support N-Leechers simultaneously.
+
+
+Files in the Project
+---------------------
+bt_setup.cpp      :      Contains setup code, such as parsing arguments
+bt_setup.h        :      Header file for bt_setup
+
+bt_lib.cpp        :      Contains code for some functions used by bt_client
+bt_lib.h          :      Header file for bt_lib
+
+bt_parser.cpp     :      Contains code for parsing a torrent file
+bt_parser.h       :      Header file for bt_parser
+
+bt_client.cpp     :      Contains code for the seeder and leecher functionality
+
+
+Compiling the Code
+---------------------
+The code compilation can be done using the Makefile as 
+  gmake all
+When compiling using gmake, the executable is stored in bt_client.
+
+
+Execution and Interpretation of Output
+---------------------------------------
+SEEDER can be started as
+    ./bt_client -b <ipAddress>:<portNum> -l <logFileName> <TorrentFileName>
+    Eg: ./bt_client -b localhost:8084 -l log1.log download.mp3.torrent
+   In seeder, -b and torrentFileName are the mandatory options.
+
+LEECHER can be started as 
+    ./bt_client -b <ipAddress>:<portNum> -p <ipAddress>:<portNum> -s <saveDirectory> -l <logFileName> <TorrentFileName>
+	Eg:  ./bt_client -b localhost:8066 -p localhost:8084 -s Download -l log3.log -v download.mp3.torrent
+   In leecher, -b, -p and TorrentFileName are the mandatory options.
+
+In both Seeder and Leecher, LogFileName is an optional attribute and if not specified, prints the logs to default log file bt_client.log.
+Also, there is an additional -v attribute to execute the program in verbose mode.
+
+To bind a peer to ip address, port number, use -b option as <ipAddress>:<portNumber> 
+To specify a seeder's address to the leecher '-p' option is used as <ipAddress>:<portNumber>
+
+Note:- As per the current implementation, the seeder has to be kept running before starting the leecher. Also, when a leecher downloads a file,
+it is by default saved in the directory 'Downloads'.
